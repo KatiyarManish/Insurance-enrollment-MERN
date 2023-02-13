@@ -95,3 +95,4 @@
 - Whatsapp Integration
 - Chat
 - Email
+- Call Support
