@@ -96,3 +96,4 @@
 - Chat
 - Email
 - Call Support
+- reminder emails
