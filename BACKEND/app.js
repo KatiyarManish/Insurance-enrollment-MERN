@@ -8,5 +8,5 @@ app.use(express.json());
 app.use("/api/v1/user", userRouter);
 
 app.listen(port, () => {
-  console.log(`app listening on ${port}`);
+  console.log(`app listening on this ${port}`);
 });
