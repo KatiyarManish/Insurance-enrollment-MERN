@@ -1,6 +1,7 @@
 const User = require("../models/user");
 const EmailVerification = require("../models/emailVerification");
 const nodemailer = require("nodemailer");
+const { isValidObjectId } = require("mongoose");
 
 const getUsers = (req, res) => {
   res.send("welcome to backend with MVC + nodemon");
@@ -63,4 +64,53 @@ const createUser = async (req, res) => {
   }
 };
 
-module.exports = { getUsers, createUser };
+const verifyEmail = async (req, res) => {
+  const { userId, OTP } = req.body;
+  if (!isValidObjectId(userId)) {
+    return res.json({ error: "Invalid user" });
+  }
+
+  const user = await User.findById(userId);
+  if (!user) {
+    return res.json({ error: "User not found" });
+  }
+
+  if (user.isVerified) {
+    return res.json({ error: "user is already verified" });
+  }
+
+  const token = await EmailVerification.findOne({ owner: userId });
+  if (!token) {
+    return res.json({ error: "token not found" });
+  }
+
+  const isMatched = await token.compareToken(OTP);
+  if (!isMatched) {
+    return res.json({ error: "Please submit a valid token" });
+  }
+
+  user.isVerified = true;
+  await user.save();
+
+  await EmailVerification.findByIdAndDelete(token._id);
+
+  var transport = nodemailer.createTransport({
+    host: "sandbox.smtp.mailtrap.io",
+    port: 2525,
+    auth: {
+      user: "b4d12ab9bfb177",
+      pass: "953d7f7ad24758",
+    },
+  });
+
+  transport.sendMail({
+    from: "noreply@gmail.com",
+    to: user.email,
+    subject: "Welcome Email",
+    html: `Welcome to our app.`,
+  });
+
+  res.json({ message: "your email is verified" });
+};
+
+module.exports = { getUsers, createUser, verifyEmail };
