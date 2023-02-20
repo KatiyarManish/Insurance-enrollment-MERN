@@ -4,10 +4,7 @@ const user = require("../models/user");
 const userValidator = [
   check("firstName").trim().notEmpty().withMessage("first Name is missing"),
   check("lastName").trim().notEmpty().withMessage("Last Name is missing"),
-  check("email")
-    .normalizeEmail()
-    .isEmail()
-    .withMessage("Email is missing or invalid email"),
+  check("email").isEmail().withMessage("Email is missing or invalid email"),
   check("password").trim().notEmpty().withMessage("Password is missing"),
   check("mobile")
     .trim()
