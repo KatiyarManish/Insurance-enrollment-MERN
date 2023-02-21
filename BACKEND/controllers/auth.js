@@ -113,4 +113,56 @@ const verifyEmail = async (req, res) => {
   res.json({ message: "your email is verified" });
 };
 
-module.exports = { getUsers, createUser, verifyEmail };
+const resendToken = async (req, res) => {
+  const { userId } = req.body;
+  const user = await User.findById(userId);
+  if (!user) {
+    return res.json({ error: "user not found" });
+  }
+
+  if (user.isVerified) {
+    return res.json({ error: "user is already verified" });
+  }
+
+  const newToken = await EmailVerification.findOne({ owner: userId });
+  if (newToken) {
+    return res.json({ error: "you can only send token after 1 hour" });
+  }
+
+  // generate 6 digit OTP
+
+  let OTP = "";
+  for (let i = 0; i <= 5; i++) {
+    let num = Math.round(Math.random() * 9);
+    OTP = OTP + num;
+  }
+  // Store in DB
+  const userOTP = await EmailVerification.create({
+    owner: user._id,
+    token: OTP,
+  });
+
+  // Send email to user
+
+  var transport = nodemailer.createTransport({
+    host: "sandbox.smtp.mailtrap.io",
+    port: 2525,
+    auth: {
+      user: "b4d12ab9bfb177",
+      pass: "953d7f7ad24758",
+    },
+  });
+
+  transport.sendMail({
+    from: "noreply@gmail.com",
+    to: user.email,
+    subject: "OTP from MERN",
+    html: `your OTP is ${OTP}`,
+  });
+
+  res
+    .status(201)
+    .json({ msg: "email sent to your registered emailId with new OTP" });
+};
+
+module.exports = { getUsers, createUser, verifyEmail, resendToken };
