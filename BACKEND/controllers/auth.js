@@ -2,6 +2,8 @@ const User = require("../models/user");
 const EmailVerification = require("../models/emailVerification");
 const nodemailer = require("nodemailer");
 const { isValidObjectId } = require("mongoose");
+const { sendOTP, emailTransport } = require("../utils/mail");
+const sendError = require("../utils/error");
 
 const getUsers = (req, res) => {
   res.send("welcome to backend with MVC + nodemon");
@@ -29,11 +31,7 @@ const createUser = async (req, res) => {
 
     // generate 6 digit OTP
 
-    let OTP = "";
-    for (let i = 0; i <= 5; i++) {
-      let num = Math.round(Math.random() * 9);
-      OTP = OTP + num;
-    }
+    let OTP = sendOTP();
     // Store in DB
     const userOTP = await EmailVerification.create({
       owner: user._id,
@@ -42,14 +40,7 @@ const createUser = async (req, res) => {
 
     // Send email to user
 
-    var transport = nodemailer.createTransport({
-      host: "sandbox.smtp.mailtrap.io",
-      port: 2525,
-      auth: {
-        user: "b4d12ab9bfb177",
-        pass: "953d7f7ad24758",
-      },
-    });
+    var transport = emailTransport();
 
     transport.sendMail({
       from: "noreply@gmail.com",
@@ -94,14 +85,7 @@ const verifyEmail = async (req, res) => {
 
   await EmailVerification.findByIdAndDelete(token._id);
 
-  var transport = nodemailer.createTransport({
-    host: "sandbox.smtp.mailtrap.io",
-    port: 2525,
-    auth: {
-      user: "b4d12ab9bfb177",
-      pass: "953d7f7ad24758",
-    },
-  });
+  var transport = emailTransport();
 
   transport.sendMail({
     from: "noreply@gmail.com",
@@ -116,8 +100,8 @@ const verifyEmail = async (req, res) => {
 const resendToken = async (req, res) => {
   const { userId } = req.body;
   const user = await User.findById(userId);
-  if (!user) {
-    return res.json({ error: "user not found" });
+  if (user === null) {
+    return sendError(res, "user not found...");
   }
 
   if (user.isVerified) {
@@ -131,11 +115,7 @@ const resendToken = async (req, res) => {
 
   // generate 6 digit OTP
 
-  let OTP = "";
-  for (let i = 0; i <= 5; i++) {
-    let num = Math.round(Math.random() * 9);
-    OTP = OTP + num;
-  }
+  let OTP = sendOTP();
   // Store in DB
   const userOTP = await EmailVerification.create({
     owner: user._id,
@@ -144,14 +124,7 @@ const resendToken = async (req, res) => {
 
   // Send email to user
 
-  var transport = nodemailer.createTransport({
-    host: "sandbox.smtp.mailtrap.io",
-    port: 2525,
-    auth: {
-      user: "b4d12ab9bfb177",
-      pass: "953d7f7ad24758",
-    },
-  });
+  var transport = emailTransport();
 
   transport.sendMail({
     from: "noreply@gmail.com",
