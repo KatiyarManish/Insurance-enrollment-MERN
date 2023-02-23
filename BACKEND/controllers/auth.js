@@ -7,6 +7,7 @@ const { sendOTP, emailTransport } = require("../utils/mail");
 const sendError = require("../utils/error");
 const isValidPassword = require("../middleware/user");
 const generateRandomByte = require("../utils/helper");
+const jwt = require("jsonwebtoken");
 
 const getUsers = (req, res) => {
   res.send("welcome to backend with MVC + nodemon");
@@ -212,6 +213,29 @@ const generateNewPassword = async (req, res) => {
   });
 };
 
+const signIn = async (req, res) => {
+  const { email, password } = req.body;
+  if (!email || !password) {
+    return sendError(res, "either email or password is missing");
+  }
+
+  const user = await User.findOne({ email: email });
+  if (!user) {
+    return sendError(res, "User not found");
+  }
+
+  const matched = await user.comparePassword(password);
+  if (!matched) {
+    return sendError(res, "password not matching");
+  }
+
+  const jwtToken = jwt.sign({ userId: user._id }, process.env.JWT_SECRET);
+
+  res.json({
+    user: { id: user._id, name: user.name, email: user.email, token: jwtToken },
+  });
+};
+
 module.exports = {
   getUsers,
   createUser,
@@ -220,4 +244,5 @@ module.exports = {
   forgotPassword,
   verifyResetPassword,
   generateNewPassword,
+  signIn,
 };

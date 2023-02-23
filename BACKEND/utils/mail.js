@@ -14,8 +14,8 @@ const emailTransport = () =>
     host: "sandbox.smtp.mailtrap.io",
     port: 2525,
     auth: {
-      user: "b4d12ab9bfb177",
-      pass: "953d7f7ad24758",
+      user: process.env.MAIL_TRAP_USER,
+      pass: process.env.MAIL_TRAP_PASSWORD,
     },
   });
 

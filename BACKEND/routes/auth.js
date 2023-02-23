@@ -5,6 +5,7 @@ const {
   newPasswordValidate,
   validate,
   newPasswordValidator,
+  signInValidator,
 } = require("../middleware/validator");
 
 const {
@@ -15,6 +16,7 @@ const {
   forgotPassword,
   verifyResetPassword,
   generateNewPassword,
+  signIn,
 } = require("../controllers/auth");
 const isValidPassword = require("../middleware/user");
 
@@ -31,5 +33,6 @@ router.post(
   validate,
   generateNewPassword
 );
+router.post("/sign-in", signInValidator, validate, signIn);
 
 module.exports = router;
