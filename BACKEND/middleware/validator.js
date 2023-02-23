@@ -23,6 +23,10 @@ const userValidator = [
     .withMessage("date of birth is missing"),
 ];
 
+const newPasswordValidator = [
+  check("newPassword").trim().notEmpty().withMessage("Password is missing"),
+];
+
 const validate = (req, res, next) => {
   const error = validationResult(req).array();
   if (error.length) {
@@ -32,4 +36,4 @@ const validate = (req, res, next) => {
   next();
 };
 
-module.exports = { userValidator, validate };
+module.exports = { userValidator, newPasswordValidator, validate };

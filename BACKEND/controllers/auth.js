@@ -1,9 +1,12 @@
 const User = require("../models/user");
 const EmailVerification = require("../models/emailVerification");
+const passwordResetToken = require("../models/passwordResetToken");
 const nodemailer = require("nodemailer");
 const { isValidObjectId } = require("mongoose");
 const { sendOTP, emailTransport } = require("../utils/mail");
 const sendError = require("../utils/error");
+const isValidPassword = require("../middleware/user");
+const generateRandomByte = require("../utils/helper");
 
 const getUsers = (req, res) => {
   res.send("welcome to backend with MVC + nodemon");
@@ -138,4 +141,83 @@ const resendToken = async (req, res) => {
     .json({ msg: "email sent to your registered emailId with new OTP" });
 };
 
-module.exports = { getUsers, createUser, verifyEmail, resendToken };
+const forgotPassword = async (req, res) => {
+  const { email } = req.body;
+  const user = await User.findOne({ email: email });
+  if (!user) {
+    return sendError(res, "user not found");
+  }
+
+  const newToken = await passwordResetToken.findOne({ owner: user._id });
+  if (newToken) {
+    return res.json({
+      error: "token already available. Please try after 1 hour",
+    });
+  }
+
+  // generate token
+  const passwordToken = await generateRandomByte();
+
+  // Store in DB
+  await passwordResetToken.create({
+    owner: user._id,
+    token: passwordToken,
+  });
+
+  // Send email to user
+  const url = `http://localhost:3000/reset-password/?token=${passwordToken}&id=${user._id}`;
+
+  var transport = emailTransport();
+
+  transport.sendMail({
+    from: "noreply@gmail.com",
+    to: user.email,
+    subject: "reset Password",
+    html: `your reset password link is given below
+          <a href = ${url}>Click Here </a>
+    `,
+  });
+
+  res
+    .status(201)
+    .json({ msg: "reset password email has been sent succesfully" });
+};
+
+const verifyResetPassword = (req, res) => {
+  return res.json({ valid: true });
+};
+
+const generateNewPassword = async (req, res) => {
+  const { newPassword, userId } = req.body;
+  const user = await User.findById(userId);
+  const matched = await user.comparePassword(newPassword);
+  if (matched)
+    return sendError(res, "new password must be different from old one");
+
+  user.password = newPassword;
+  await user.save();
+
+  await passwordResetToken.findByIdAndDelete(req.tokenFromDB._id);
+
+  var transport = emailTransport();
+  transport.sendMail({
+    from: "noreply@gmail.com",
+    to: user.email,
+    subject: "Password Reset Successfully",
+    html: `You have setup new password successfully`,
+  });
+
+  res.json({
+    message: "password reset successfully, you can login using new password",
+  });
+};
+
+module.exports = {
+  getUsers,
+  createUser,
+  verifyEmail,
+  resendToken,
+  forgotPassword,
+  verifyResetPassword,
+  generateNewPassword,
+};

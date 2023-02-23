@@ -17,8 +17,8 @@ const passwordResetTokenSchema = new Schema({
 
   createdAt: {
     type: Date,
-    expireAfterSeconds: 60,
-    default: Date.now(),
+    expireAt: 3600,
+    default: Date.now,
   },
 });
 
